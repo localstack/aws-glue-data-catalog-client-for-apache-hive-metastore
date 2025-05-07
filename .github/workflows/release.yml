@@ -3,6 +3,9 @@ name: Release
 on:
   release:
     types: [created]
+  push:
+    branches:
+      - release/3.4.0
   workflow_dispatch:
     inputs:
       version:
@@ -39,6 +42,10 @@ jobs:
     - name: Set version from input
       if: github.event_name == 'workflow_dispatch'
       run: echo "RELEASE_VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+      
+    - name: Set version from branch
+      if: github.ref == 'refs/heads/release/3.4.0'
+      run: echo "RELEASE_VERSION=3.4.0" >> $GITHUB_ENV
 
     - name: Build final artifacts
       run: |
@@ -47,25 +54,25 @@ jobs:
         mvn -B clean package -DskipTests
       
     - name: Upload Common Client Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: aws-glue-datacatalog-client-common
         path: aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar
 
     - name: Upload Spark Client Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: aws-glue-datacatalog-spark-client
         path: aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar
 
     - name: Upload Hive3 Client Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: aws-glue-datacatalog-hive3-client
         path: aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar
 
     - name: Upload Shims Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: shims
         path: |
