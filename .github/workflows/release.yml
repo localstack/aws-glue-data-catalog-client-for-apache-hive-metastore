@@ -29,6 +29,27 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    # Add steps to clone and patch Hive according to README.md
+    - name: Clone Apache Hive
+      run: git clone https://github.com/apache/hive.git
+
+    - name: Apply Hive 3.1 patch
+      run: |
+        cd hive
+        git checkout branch-3.1
+        git apply -3 $GITHUB_WORKSPACE/branch_3.1.patch
+        mvn clean install -DskipTests
+
+    - name: Apply Hive 2.3 patch for Spark
+      run: |
+        cd hive
+        git add .
+        git reset --hard
+        git checkout branch-2.3
+        wget -O HIVE-12679.branch-2.3.patch https://issues.apache.org/jira/secure/attachment/12958418/HIVE-12679.branch-2.3.patch
+        patch -p0 < HIVE-12679.branch-2.3.patch
+        mvn clean install -DskipTests
+
     - name: Build with Maven
       run: mvn -B clean install -DskipTests
 
