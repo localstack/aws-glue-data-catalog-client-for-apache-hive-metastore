@@ -63,11 +63,11 @@ jobs:
         cd aws-glue-datacatalog-spark-client
         mvn clean package -DskipTests
     
-    - name: List files
-      run: |
-        ls -l || echo "No target directory found"
-        ls -l hive/target || echo "No target directory found"
-        ls -l aws-glue-datacatalog-client-common/target || echo "No target directory found"
-        ls -l aws-glue-datacatalog-hive3-client/target || echo "No target directory found"
-        ls -l aws-glue-datacatalog-spark-client/target || echo "No target directory found"
-        ls -l target || echo "No target directory found"
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: glue-datacatalog-client
+        path: |
+          aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar
+          aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar
+          aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar
