@@ -36,13 +36,13 @@ jobs:
         
     - name: Build Hive with Maven 3.1
       working-directory: hive
-      run: mvn -B clean install -DskipTests
+      run: mvn clean install -DskipTests
 
     - name: Build Hive with Maven 2.3
       working-directory: hive
       run: |
         git checkout branch-2.3.patch
-        mvn -B clean install -DskipTest
+        mvn clean install -DskipTests
 
     - name: Build Metastore with Maven
-      run: mvn -B clean install -DskipTests
+      run: mvn clean install -DskipTests
