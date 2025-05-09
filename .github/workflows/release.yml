@@ -45,4 +45,29 @@ jobs:
         mvn clean install -DskipTests
 
     - name: Build Metastore with Maven
-      run: mvn clean install -DskipTests
+      run: |
+        mvn clean install -DskipTests
+    
+    - name: Build AWS Glue Data Catalog Client
+      run: |
+        cd aws-glue-datacatalog-client-common
+        mvn clean package -DskipTests
+
+    - name: Build AWS Glue Data Catalog Hive3 Client
+      run: |
+        cd aws-glue-datacatalog-hive3-client
+        mvn clean package -DskipTests
+
+    - name: Build AWS Glue Data Catalog Spark Client
+      run: |
+        cd aws-glue-datacatalog-spark-client
+        mvn clean package -DskipTests
+    
+    - name: List files
+      run: |
+        ls -l || echo "No target directory found"
+        ls -l hive/target || echo "No target directory found"
+        ls -l aws-glue-datacatalog-client-common/target || echo "No target directory found"
+        ls -l aws-glue-datacatalog-hive3-client/target || echo "No target directory found"
+        ls -l aws-glue-datacatalog-spark-client/target || echo "No target directory found"
+        ls -l target || echo "No target directory found"
