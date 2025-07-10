@@ -32,11 +32,11 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Build Hive with Maven 3.1
+    - name: Build Hive 3.1 with Maven
       working-directory: hive
       run: mvn clean install -DskipTests
 
-    - name: Build Hive with Maven 2.3
+    - name: Build Hive 2.3 with Maven
       working-directory: hive
       run: |
         git checkout branch-2.3.patch
