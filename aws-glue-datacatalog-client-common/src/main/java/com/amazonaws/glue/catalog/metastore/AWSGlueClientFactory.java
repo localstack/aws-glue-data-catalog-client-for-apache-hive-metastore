@@ -54,8 +54,7 @@ public final class AWSGlueClientFactory implements GlueClientFactory {
 
       // ClientBuilder only allows one of EndpointConfiguration or Region to be set
       if (StringUtils.isNotBlank(glueEndpoint)) {
-        logger.info("Setting glue service endpoint to " + glueEndpoint);
-        glueClientBuilder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(glueEndpoint, null));
+        glueClientBuilder.setEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(glueEndpoint, regionStr));
       } else if (StringUtils.isNotBlank(regionStr)) {
         logger.info("Setting region to : " + regionStr);
         glueClientBuilder.setRegion(regionStr);
