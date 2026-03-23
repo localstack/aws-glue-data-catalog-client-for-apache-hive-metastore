@@ -1,0 +1,92 @@
+name: Build MetaStore for Hive/Hadoop/Spark
+on:
+  push:
+    branches: [ branch-3.4.0-release ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Clone Apache Hive Fork
+      run: |
+        git clone --branch branch-3.1.patch https://github.com/macnev2013/hive.git
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: '8'
+        distribution: 'temurin'
+        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build Hive 3.1 with Maven
+      working-directory: hive
+      run: mvn clean install -DskipTests
+    - name: Build Hive 2.3 with Maven
+      working-directory: hive
+      run: |
+        git checkout branch-2.3.patch
+        mvn clean install -DskipTests
+    - name: Build Metastore with Maven
+      run: |
+        mvn clean install -DskipTests
+    
+    - name: Build AWS Glue Data Catalog Client
+      run: |
+        cd aws-glue-datacatalog-client-common
+        mvn clean package -DskipTests
+    - name: Build AWS Glue Data Catalog Hive3 Client
+      run: |
+        cd aws-glue-datacatalog-hive3-client
+        mvn clean package -DskipTests
+    - name: Build AWS Glue Data Catalog Spark Client
+      run: |
+        cd aws-glue-datacatalog-spark-client
+        mvn clean package -DskipTests
+    
+    - name: Generate SHA256 checksums
+      run: |
+        # Generate checksums for client-common
+        cd aws-glue-datacatalog-client-common/target
+        for jar in aws-glue-datacatalog-client-common-*.jar; do
+          sha256sum "$jar" > "$jar.sha256"
+        done
+        cd ../..
+        
+        # Generate checksums for hive3-client
+        cd aws-glue-datacatalog-hive3-client/target
+        for jar in aws-glue-datacatalog-hive3-client-*.jar; do
+          sha256sum "$jar" > "$jar.sha256"
+        done
+        cd ../..
+        
+        # Generate checksums for spark-client
+        cd aws-glue-datacatalog-spark-client/target
+        for jar in aws-glue-datacatalog-spark-client-*.jar; do
+          sha256sum "$jar" > "$jar.sha256"
+        done
+    
+    - name: Upload to Release
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: metastore-3.4.0-release
+        files: |
+          aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar
+          aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar.sha256
+          aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar
+          aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar.sha256
+          aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar
+          aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar.sha256
+        draft: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
