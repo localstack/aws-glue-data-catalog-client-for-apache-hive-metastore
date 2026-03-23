@@ -742,7 +742,12 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
   @Override
   public void createTable(Table tbl) throws org.apache.hadoop.hive.metastore.api.AlreadyExistsException, InvalidObjectException, MetaException,
         NoSuchObjectException, TException {
-    HiveMetaHook hook = getHook(tbl);
+    HiveMetaHook hook = null;
+    try {
+      hook = getHook(tbl);
+    } catch (Exception e) {
+      LOG.warn("Failed to get MetaHook for table, proceeding without hook", e);
+    }
     if (hook != null) {
       hook.preCreateTable(tbl);
     }
