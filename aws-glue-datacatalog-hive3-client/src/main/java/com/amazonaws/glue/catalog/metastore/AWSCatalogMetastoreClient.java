@@ -752,7 +752,9 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
       hook.preCreateTable(tbl);
     }
     try {
-      glueMetastoreClientDelegate.createTable(tbl);
+      // Use deepCopy since preCreateTable may modify the table object
+      // (e.g. Iceberg sets partitionKeysIsSet=false which causes NPE in Glue converter)
+      glueMetastoreClientDelegate.createTable(tbl.deepCopy());
     } catch (Exception e) {
       if (hook != null) {
         hook.rollbackCreateTable(tbl);
