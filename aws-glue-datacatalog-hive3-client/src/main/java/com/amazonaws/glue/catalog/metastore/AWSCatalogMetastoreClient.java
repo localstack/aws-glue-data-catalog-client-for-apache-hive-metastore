@@ -748,13 +748,14 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
     } catch (Exception e) {
       logger.warn("Failed to get MetaHook for table, proceeding without hook", e);
     }
+    // Deep copy before preCreateTable since the hook may modify the table
+    // (e.g. Iceberg sets partitionKeysIsSet=false which causes NPE in Glue converter)
+    Table tblForGlue = tbl.deepCopy();
     if (hook != null) {
       hook.preCreateTable(tbl);
     }
     try {
-      // Use deepCopy since preCreateTable may modify the table object
-      // (e.g. Iceberg sets partitionKeysIsSet=false which causes NPE in Glue converter)
-      glueMetastoreClientDelegate.createTable(tbl.deepCopy());
+      glueMetastoreClientDelegate.createTable(tblForGlue);
     } catch (Exception e) {
       if (hook != null) {
         hook.rollbackCreateTable(tbl);
