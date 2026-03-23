@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.common.ValidTxnList;
 import org.apache.hadoop.hive.common.ValidWriteIdList;
+import org.apache.hadoop.hive.metastore.HiveMetaHook;
 import org.apache.hadoop.hive.metastore.HiveMetaHookLoader;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.PartitionDropOptions;
@@ -169,14 +170,15 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
 
   private Map<String, String> currentMetaVars;
   private final AwsGlueHiveShims hiveShims = ShimsLoader.getHiveShims();
+  private HiveMetaHookLoader hookLoader;
 
   public AWSCatalogMetastoreClient(Configuration conf, HiveMetaHookLoader hook) throws MetaException {
     this.conf = conf;
+    this.hookLoader = hook;
     catalogId = MetastoreClientUtils.getCatalogId(conf);
     glueClient = new AWSGlueClientFactory(this.conf).newClient();
     catalogToHiveConverter = new Hive3CatalogToHiveConverter();
 
-    // TODO preserve existing functionality for HiveMetaHook
     wh = new Warehouse(this.conf);
 
     AWSGlueMetastore glueMetastore = new AWSGlueMetastoreFactory().newMetastore(conf);
@@ -740,7 +742,28 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
   @Override
   public void createTable(Table tbl) throws org.apache.hadoop.hive.metastore.api.AlreadyExistsException, InvalidObjectException, MetaException,
         NoSuchObjectException, TException {
-    glueMetastoreClientDelegate.createTable(tbl);
+    HiveMetaHook hook = getHook(tbl);
+    if (hook != null) {
+      hook.preCreateTable(tbl);
+    }
+    try {
+      glueMetastoreClientDelegate.createTable(tbl);
+    } catch (Exception e) {
+      if (hook != null) {
+        hook.rollbackCreateTable(tbl);
+      }
+      throw e;
+    }
+    if (hook != null) {
+      hook.commitCreateTable(tbl);
+    }
+  }
+
+  private HiveMetaHook getHook(Table tbl) throws MetaException {
+    if (hookLoader == null) {
+      return null;
+    }
+    return hookLoader.getHook(tbl);
   }
 
   @Override
