@@ -38,7 +38,7 @@ jobs:
     #     mvn clean install -DskipTests
     - name: Build Metastore with Maven
       run: |
-        mvn clean install -DskipTests
+        mvn clean install -DskipTests -pl '!aws-glue-datacatalog-spark-client'
     
     - name: Build AWS Glue Data Catalog Client
       run: |
@@ -48,11 +48,6 @@ jobs:
       run: |
         cd aws-glue-datacatalog-hive3-client
         mvn clean package -DskipTests
-    - name: Build AWS Glue Data Catalog Spark Client
-      run: |
-        cd aws-glue-datacatalog-spark-client
-        mvn clean package -DskipTests
-    
     - name: Generate SHA256 checksums
       run: |
         # Generate checksums for client-common
@@ -61,17 +56,10 @@ jobs:
           sha256sum "$jar" > "$jar.sha256"
         done
         cd ../..
-        
+
         # Generate checksums for hive3-client
         cd aws-glue-datacatalog-hive3-client/target
         for jar in aws-glue-datacatalog-hive3-client-*.jar; do
-          sha256sum "$jar" > "$jar.sha256"
-        done
-        cd ../..
-        
-        # Generate checksums for spark-client
-        cd aws-glue-datacatalog-spark-client/target
-        for jar in aws-glue-datacatalog-spark-client-*.jar; do
           sha256sum "$jar" > "$jar.sha256"
         done
     
@@ -85,8 +73,6 @@ jobs:
           aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar.sha256
           aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar
           aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar.sha256
-          aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar
-          aws-glue-datacatalog-spark-client/target/aws-glue-datacatalog-spark-client-*.jar.sha256
         draft: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
