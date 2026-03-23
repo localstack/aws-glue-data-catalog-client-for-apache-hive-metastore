@@ -746,7 +746,7 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
     try {
       hook = getHook(tbl);
     } catch (Exception e) {
-      LOG.warn("Failed to get MetaHook for table, proceeding without hook", e);
+      logger.warn("Failed to get MetaHook for table, proceeding without hook", e);
     }
     if (hook != null) {
       hook.preCreateTable(tbl);
