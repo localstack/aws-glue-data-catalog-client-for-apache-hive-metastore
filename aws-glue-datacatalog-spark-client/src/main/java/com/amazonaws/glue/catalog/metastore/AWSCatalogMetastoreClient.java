@@ -135,6 +135,10 @@ public class AWSCatalogMetastoreClient implements IMetaStoreClient {
 
   public AWSCatalogMetastoreClient(HiveConf conf, HiveMetaHookLoader hook) throws MetaException {
     this.conf = conf;
+    String awsRegion = conf.get("aws.region");
+    if (awsRegion != null) {
+      System.out.println("AWSCatalogMetastoreClient initialized with aws.region: " + awsRegion);
+    }
     catalogId = MetastoreClientUtils.getCatalogId(conf);
     glueClient = new AWSGlueClientFactory(this.conf).newClient();
     catalogToHiveConverter = new BaseCatalogToHiveConverter();

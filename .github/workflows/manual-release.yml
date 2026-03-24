@@ -1,0 +1,92 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 3.4.0, 3.5.0-rc1)'
+        required: true
+        type: string
+      draft:
+        description: 'Create as draft release'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Clone Apache Hive Fork
+      run: |
+        git clone --branch branch-3.1.patch https://github.com/localstack/hive.git
+
+    - name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: '8'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Set version in pom files
+      run: |
+        mvn versions:set -DnewVersion=${{ inputs.version }} -DgenerateBackupPoms=false
+
+    - name: Build Hive 3.1 with Maven
+      working-directory: hive
+      run: mvn clean install -DskipTests
+
+    - name: Build Metastore with Maven
+      run: |
+        mvn clean install -DskipTests -pl '!aws-glue-datacatalog-spark-client'
+
+    - name: Build AWS Glue Data Catalog Client
+      run: |
+        cd aws-glue-datacatalog-client-common
+        mvn clean package -DskipTests
+
+    - name: Build AWS Glue Data Catalog Hive3 Client
+      run: |
+        cd aws-glue-datacatalog-hive3-client
+        mvn clean package -DskipTests
+
+    - name: Generate SHA256 checksums
+      run: |
+        cd aws-glue-datacatalog-client-common/target
+        for jar in aws-glue-datacatalog-client-common-*.jar; do
+          sha256sum "$jar" > "$jar.sha256"
+        done
+        cd ../..
+
+        cd aws-glue-datacatalog-hive3-client/target
+        for jar in aws-glue-datacatalog-hive3-client-*.jar; do
+          sha256sum "$jar" > "$jar.sha256"
+        done
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ inputs.version }}
+        name: Release ${{ inputs.version }}
+        body: |
+          Release ${{ inputs.version }} built from branch `${{ github.ref_name }}` (commit ${{ github.sha }}).
+        files: |
+          aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar
+          aws-glue-datacatalog-client-common/target/aws-glue-datacatalog-client-common-*.jar.sha256
+          aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar
+          aws-glue-datacatalog-hive3-client/target/aws-glue-datacatalog-hive3-client-*.jar.sha256
+        draft: ${{ inputs.draft }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
